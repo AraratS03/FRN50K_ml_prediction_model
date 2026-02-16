@@ -414,5 +414,111 @@ ORDER BY
 
 
 
+--TASK6B
+--24
+SELECT
+    activity_flag,
+    COUNT(*) AS total_hours,
+    SUM(sale_amount) AS total_sales,
+    AVG(sale_amount) AS avg_sales_per_hour
+FROM train_data
+GROUP BY activity_flag;
+
+--25
+SELECT 
+    CASE 
+        WHEN "is_promotional" = 1 THEN 'Promotional'
+        ELSE 'Non-Promotional'
+    END AS promotion_status,
+    AVG("sale_amount") AS avg_sale_during_stockout
+FROM "hourly_business_summary"
+WHERE "stockout_flag" = 1
+GROUP BY "is_promotional";
+
+
+--TASK7A
+--26
+SELECT
+    store_id,
+    third_category_id,
+
+    COUNT(*) AS total_hours,
+    SUM(sale_amount) AS total_sales,
+    AVG(sale_amount) AS avg_hourly_sales,
+
+    SUM(stockout_flag) AS stockout_hours,
+    SUM(stockout_flag) * 1.0 / COUNT(*) AS stockout_rate,
+
+    SUM(CASE 
+            WHEN stockout_flag = 1 AND sale_occurred = 0 
+            THEN 1 ELSE 0 
+        END) AS lost_sales_hours
+
+FROM hourly_business_summary
+GROUP BY store_id, third_category_id
+HAVING 
+    AVG(sale_amount) > (
+        SELECT AVG(sale_amount) FROM hourly_business_summary
+    )
+    AND
+    SUM(stockout_flag) * 1.0 / COUNT(*) > 0.15
+ORDER BY avg_hourly_sales DESC;
+
+--27
+SELECT
+    third_category_id,
+
+    AVG(CASE WHEN is_raining = 1 THEN sale_amount END) AS avg_sales_rain,
+
+    AVG(CASE WHEN is_raining = 0 THEN sale_amount END) AS avg_sales_no_rain,
+
+    CASE
+        WHEN AVG(CASE WHEN is_raining = 0 THEN sale_amount END) > 0
+        THEN
+            (
+                AVG(CASE WHEN is_raining = 1 THEN sale_amount END)
+                -
+                AVG(CASE WHEN is_raining = 0 THEN sale_amount END)
+            )
+            /
+            AVG(CASE WHEN is_raining = 0 THEN sale_amount END)
+        ELSE NULL
+    END AS rain_impact_ratio
+
+FROM hourly_business_summary
+GROUP BY third_category_id
+ORDER BY rain_impact_ratio DESC;
+
+--TASK7B
+--28
+SELECT 
+	"hour", SUM(sale_amount) AS total_sales
+FROM "hourly_business_summary"
+GROUP BY "hour"
+ORDER BY total_sales DESC
+LIMIT 5; 
+
+SELECT 
+	product_id, COUNT(*) AS stockout_occurrences
+FROM "train_data"
+WHERE "hour" IN ('10', '11', '12', '13', '14') AND stock_hour6_22_cnt = 0
+GROUP BY product_id
+ORDER BY stockout_occurrences DESC;
+
+--29
+SELECT 
+    "store_id", 
+    SUM(lost_sales_due_to_stockouts) AS potential_sales_increase
+FROM store_performance_dashboard
+GROUP BY "store_id";
+
+--30
+SELECT 
+    "store_id",
+    (COALESCE(total_sales, 0) * 0.5 + 
+     COALESCE(avg_sales_per_day, 0) * 0.3 - 
+     COALESCE(stockout_days, 0) * 0.1 + 
+     COALESCE(avg_stock_availability, 0) * 0.1) AS store_health_score
+FROM store_performance_dashboard;
 
 
