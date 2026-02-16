@@ -6,6 +6,7 @@ from typing import Dict, Tuple, Optional, List
 import logging
 from pathlib import Path
 import yaml
+from sqlalchemy import create_engine
 
 # Set up logging to help students debug issues
 logging.basicConfig(filename="app.log",filemode="a",level=logging.INFO,
@@ -38,6 +39,9 @@ class FreshRetailDataLoader:
         self.train_data = None
         self.eval_data = None
         
+        # Initialize SQLite engine for SQL queries
+        self.engine = create_engine('sqlite:///frn50k_data.db', echo=False)
+        
     def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Load the FreshRetailNet-50K dataset from HuggingFace.
@@ -64,6 +68,12 @@ class FreshRetailDataLoader:
             logger.info(f"  Training samples: {len(self.train_data):,}")
             logger.info(f"  Evaluation samples: {len(self.eval_data):,}")
             logger.info(f"  Date range: {self.train_data[datetime_col].min()} to {self.train_data[datetime_col].max()}")
+            
+            # Load data into SQLite database for SQL queries
+            logger.info("Loading data into SQLite database...")
+            self.train_data.to_sql('train_data', con=self.engine, if_exists='replace', index=False)
+            self.eval_data.to_sql('eval_data', con=self.engine, if_exists='replace', index=False)
+            logger.info("Data loaded into SQLite. Use SQL queries on: train_data, eval_data tables")
             
             return self.train_data, self.eval_data
             
