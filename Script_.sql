@@ -413,7 +413,6 @@ ORDER BY
     "promo_effectiveness" DESC;
 
 
-
 --TASK6B
 --24
 SELECT
@@ -520,5 +519,13 @@ SELECT
      COALESCE(stockout_days, 0) * 0.1 + 
      COALESCE(avg_stock_availability, 0) * 0.1) AS store_health_score
 FROM store_performance_dashboard;
+
+
+
+
+
+
+
+
 
 
